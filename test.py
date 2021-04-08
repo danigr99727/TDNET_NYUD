@@ -64,7 +64,7 @@ def test(args):
             #pred = cv2.resize(pred, (ori_size[0]//4,ori_size[1]//4), interpolation=cv2.INTER_NEAREST)
             decoded = vid_seq.decode_segmap(pred)
 
-            save_dir = os.path.join(args.output_path,folder)
+            save_dir = os.path.join(args.output_path+args.model,folder)
             res_path = os.path.join(save_dir,img_name)
             if not os.path.exists(save_dir):
                 os.mkdir(save_dir)
@@ -83,7 +83,9 @@ def test(args):
 
 
 if __name__ == "__main__":
+
     parser = argparse.ArgumentParser(description="Params")
+
     parser.add_argument("--img_path",nargs="?",type=str,
             default="./data/vid1",help="Path_to_Frame",)
 
