@@ -8,7 +8,6 @@ import cv2
 import timeit
 from model import td4_psp18, td2_psp50, pspnet
 from dataloader import cityscapesLoader
-#
 
 
 torch.backends.cudnn.benchmark = True
