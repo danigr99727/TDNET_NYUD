@@ -39,7 +39,8 @@ def recursive_glob(rootdir=".", suffix=""):
 
 
 class cityscapesLoader():
-
+    colors = color_map(N=256)
+    label_colours = dict(zip(range(256), colors))
     def __init__(self,img_path,in_size):
         self.img_path = img_path
         self.n_classes = 40

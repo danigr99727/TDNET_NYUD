@@ -1,3 +1,5 @@
+#!/usr/bin/env /root/anaconda3/envs/TDNet/bin/python
+
 import os
 import torch
 import sys
@@ -70,7 +72,6 @@ def test(args):
             imageio.imwrite(res_path, decoded.astype(np.uint8))
             cv2.namedWindow("Image")
             cv2.imshow("Image", decoded.astype(np.uint8))
-            cv2.waitKey(1)
 
             print(" Frame {0:2d}   RunningTime/Latency={1:3.5f} s".format(i + 1,  elapsed_time))
 

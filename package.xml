@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>segmentation_node</name>
+  <name>tdnet_nyud</name>
   <version>0.0.0</version>
   <description>Semantic segmentation</description>
 

@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+
+    <node pkg="rosbag" type="play" name="player" output="screen" args="--clock -l -r 0.5 /root/Camera2.bag " launch-prefix="bash -c 'sleep 1; $0 $@' "/>
+    <node name="rvizvisualisation" pkg="rviz" type="rviz" output="log" args="-d $(find tdnet_nyud)/launch/rviz_config.rviz" />
+    <node name="segmentator" pkg="tdnet_nyud" type="segmentation.py" output="screen">
+       <remap from="image_raw" to="/s20cam_wide/image_rect_color" />
+    </node>
+
+</launch>
