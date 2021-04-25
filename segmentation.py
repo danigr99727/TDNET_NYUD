@@ -8,7 +8,7 @@ import cv2
 import imageio
 import timeit
 from model import td4_psp18, td2_psp50, pspnet
-from dataloader import preprocessor
+from preprocessor import preprocessor
 import rospy
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
@@ -69,37 +69,30 @@ if __name__ == "__main__":
             if on_image.last_image is not None:
 
                 image = cvBridge.imgmsg_to_cv2(img_msg=on_image.last_image)
-
                 image = prepr.load_frame(image)
-                #for i, (image, img_name, folder, ori_size) in enumerate(vid_seq.data):
-
                 image = image.to(device)
 
                 torch.cuda.synchronize()
                 start_time = timeit.default_timer()
-
                 output = model(image, pos_id=i)
-
                 torch.cuda.synchronize()
                 elapsed_time = timeit.default_timer() - start_time
-
 
                 pred = np.squeeze(output.data.max(1)[1].cpu().numpy(), axis=0)
 
                 pred = pred.astype(np.int8)
                 #pred = cv2.resize(pred, (ori_size[0]//4,ori_size[1]//4), interpolation=cv2.INTER_NEAREST)
-                decoded = prepr.decode_segmap(pred)
 
                 header = on_image.last_image.header
-                #semantic = model.infer([cv_bridge.imgmsg_to_cv2(on_image.last_image)])[0]
 
                 if pub_semantic.get_num_connections() > 0:
-                    #m = cvBridge.cv2_to_imgmsg(decoded.astype(np.uint8), encoding='mono8')
-                    #m.header.stamp.secs = header.stamp.secs
-                    #m.header.stamp.nsecs = header.stamp.nsecs
-                    pub_semantic.publish(on_image.last_image)
+                    m = cvBridge.cv2_to_imgmsg(pred.astype(np.uint8), encoding='mono8')
+                    m.header.stamp.secs = header.stamp.secs
+                    m.header.stamp.nsecs = header.stamp.nsecs
+                    pub_semantic.publish(m)
 
                 if pub_semantic_color.get_num_connections() > 0:
+                    decoded = prepr.decode_segmap(pred)
                     m = cvBridge.cv2_to_imgmsg(decoded.astype(np.uint8), encoding='rgb8')
                     m.header.stamp.secs = header.stamp.secs
                     m.header.stamp.nsecs = header.stamp.nsecs
