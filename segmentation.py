@@ -19,7 +19,11 @@ torch.cuda.cudnn_enabled = True
 
 def on_image(msg):
     on_image.last_image = msg
+    on_image.new_image = True
+
+
 on_image.last_image = None
+on_image.new_image = False
 
 cvBridge = CvBridge()
 
@@ -37,38 +41,37 @@ if __name__ == "__main__":
     RATE = rospy.get_param('~rate', 3.0)
 
     sub_image = rospy.Subscriber(TOPIC_IMAGE, Image, on_image)
-    pub_semantic = rospy.Publisher(TOPIC_SEMANTIC, Image, queue_size = 1)
-    pub_semantic_color = rospy.Publisher(TOPIC_SEMANTIC_COLOR, Image, queue_size = 1)
+    pub_semantic = rospy.Publisher(TOPIC_SEMANTIC, Image, queue_size=1)
+    pub_semantic_color = rospy.Publisher(TOPIC_SEMANTIC_COLOR, Image, queue_size=1)
 
     rate = rospy.Rate(RATE)
 
     os.environ["CUDA_VISIBLE_DEVICES"] = GPU
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    path_num=2
-    if MODEL=='td4-psp18':
+    path_num = 2
+    if MODEL == 'td4-psp18':
         path_num = 4
-        model = td4_psp18.td4_psp18(nclass=40,path_num=path_num,model_path="./checkpoint/td4p18-nyu.pkl")
+        model = td4_psp18.td4_psp18(nclass=40, path_num=path_num, model_path="./checkpoint/td4p18-nyu.pkl")
 
-    elif MODEL=='td2-psp50':
+    elif MODEL == 'td2-psp50':
         path_num = 2
-        model = td2_psp50.td2_psp50(nclass=40,path_num=path_num,model_path="/root/fiesta_ws/src/tdnet_nyud/checkpoint/td2p50-nyu.pkl")
+        model = td2_psp50.td2_psp50(nclass=40, path_num=path_num,
+                                    model_path="/root/fiesta_ws/src/tdnet_nyud/checkpoint/td2p50-nyu.pkl")
 
-    #elif MODEL=='psp101':
+    # elif MODEL=='psp101':
     #    path_num = 1
     #    model = pspnet.pspnet(nclass=40,model_path=args._psp101_path)
 
     model.eval()
     model.to(device)
 
-
     with torch.no_grad():
-        while not rospy.is_shutdown():
-            #rate.sleep()
-
-            if on_image.last_image is not None:
-
-                image = cvBridge.imgmsg_to_cv2(img_msg=on_image.last_image)
+        while (not rospy.is_shutdown()):
+            # rate.sleep()
+            if on_image.last_image is not None and on_image.new_image:
+                on_image.new_image = False
+                image = cvBridge.imgmsg_to_cv2(img_msg=on_image.last_image, desired_encoding="rgb8")
                 image = prepr.load_frame(image)
                 image = image.to(device)
 
@@ -81,7 +84,7 @@ if __name__ == "__main__":
                 pred = np.squeeze(output.data.max(1)[1].cpu().numpy(), axis=0)
 
                 pred = pred.astype(np.int8)
-                #pred = cv2.resize(pred, (ori_size[0]//4,ori_size[1]//4), interpolation=cv2.INTER_NEAREST)
+                pred = cv2.resize(pred, (640, 480), interpolation=cv2.INTER_NEAREST)
 
                 header = on_image.last_image.header
 
@@ -98,7 +101,7 @@ if __name__ == "__main__":
                     m.header.stamp.nsecs = header.stamp.nsecs
                     pub_semantic_color.publish(m)
 
-                if i == path_num-1:
-                    i=0
+                if i == path_num - 1:
+                    i = 0
                 else:
-                    i+=1
+                    i += 1
