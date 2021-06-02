@@ -1,6 +1,8 @@
 #!/usr/bin/env /root/anaconda3/envs/TDNet/bin/python
 
 import os
+
+import std_msgs.msg
 import torch
 import sys
 import numpy as np
@@ -16,8 +18,10 @@ from sensor_msgs.msg import Image
 
 torch.backends.cudnn.benchmark = True
 torch.cuda.cudnn_enabled = True
+pub_received = rospy.Publisher
 
 def on_image(msg):
+    pub_received.publish(msg.header)
     on_image.last_image = msg
     on_image.new_image = True
 
@@ -44,6 +48,9 @@ if __name__ == "__main__":
     pub_semantic = rospy.Publisher(TOPIC_SEMANTIC, Image, queue_size=1)
     pub_semantic_color = rospy.Publisher(TOPIC_SEMANTIC_COLOR, Image, queue_size=1)
 
+    pub_received = rospy.Publisher("/tdnet/received", std_msgs.msg.Header, queue_size=500)
+    pub_sent = rospy.Publisher("/tdnet/sent", std_msgs.msg.Header, queue_size=500)
+
     rate = rospy.Rate(RATE)
 
     os.environ["CUDA_VISIBLE_DEVICES"] = GPU
@@ -57,7 +64,7 @@ if __name__ == "__main__":
     elif MODEL == 'td2-psp50':
         path_num = 2
         model = td2_psp50.td2_psp50(nclass=40, path_num=path_num,
-                                    model_path="/root/fiesta_ws/src/tdnet_nyud/checkpoint/td2p50-nyu.pkl")
+                                    model_path="/root/monocular_exploration/src/tdnet_nyud/checkpoint/td2p50-nyu.pkl")
 
     # elif MODEL=='psp101':
     #    path_num = 1
@@ -84,7 +91,7 @@ if __name__ == "__main__":
                 pred = np.squeeze(output.data.max(1)[1].cpu().numpy(), axis=0)
 
                 pred = pred.astype(np.int8)
-                pred = cv2.resize(pred, (640, 480), interpolation=cv2.INTER_NEAREST)
+                pred = cv2.resize(pred, (320, 240), interpolation=cv2.INTER_NEAREST)
 
                 header = on_image.last_image.header
 
@@ -92,6 +99,8 @@ if __name__ == "__main__":
                     m = cvBridge.cv2_to_imgmsg(pred.astype(np.uint8), encoding='mono8')
                     m.header.stamp.secs = header.stamp.secs
                     m.header.stamp.nsecs = header.stamp.nsecs
+
+                    pub_sent.publish(on_image.last_image.header)
                     pub_semantic.publish(m)
 
                 if pub_semantic_color.get_num_connections() > 0:
