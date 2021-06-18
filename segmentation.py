@@ -45,11 +45,11 @@ if __name__ == "__main__":
     RATE = rospy.get_param('~rate', 3.0)
 
     sub_image = rospy.Subscriber(TOPIC_IMAGE, Image, on_image)
-    pub_semantic = rospy.Publisher(TOPIC_SEMANTIC, Image, queue_size=1)
-    pub_semantic_color = rospy.Publisher(TOPIC_SEMANTIC_COLOR, Image, queue_size=1)
+    pub_semantic = rospy.Publisher(TOPIC_SEMANTIC, Image, queue_size=10)
+    pub_semantic_color = rospy.Publisher(TOPIC_SEMANTIC_COLOR, Image, queue_size=10)
 
-    pub_received = rospy.Publisher("/tdnet/received", std_msgs.msg.Header, queue_size=500)
-    pub_sent = rospy.Publisher("/tdnet/sent", std_msgs.msg.Header, queue_size=500)
+    pub_received = rospy.Publisher("/tdnet/received", std_msgs.msg.Header, queue_size=50)
+    pub_sent = rospy.Publisher("/tdnet/sent", std_msgs.msg.Header, queue_size=50)
 
     rate = rospy.Rate(RATE)
 
@@ -78,6 +78,7 @@ if __name__ == "__main__":
             # rate.sleep()
             if on_image.last_image is not None and on_image.new_image:
                 on_image.new_image = False
+                header = on_image.last_image.header
                 image = cvBridge.imgmsg_to_cv2(img_msg=on_image.last_image, desired_encoding="rgb8")
                 image = prepr.load_frame(image)
                 image = image.to(device)
@@ -91,16 +92,15 @@ if __name__ == "__main__":
                 pred = np.squeeze(output.data.max(1)[1].cpu().numpy(), axis=0)
 
                 pred = pred.astype(np.int8)
-                pred = cv2.resize(pred, (320, 240), interpolation=cv2.INTER_NEAREST)
+                pred = cv2.resize(pred, (640, 480), interpolation=cv2.INTER_NEAREST)
 
-                header = on_image.last_image.header
 
                 if pub_semantic.get_num_connections() > 0:
                     m = cvBridge.cv2_to_imgmsg(pred.astype(np.uint8), encoding='mono8')
                     m.header.stamp.secs = header.stamp.secs
                     m.header.stamp.nsecs = header.stamp.nsecs
 
-                    pub_sent.publish(on_image.last_image.header)
+                    pub_sent.publish(header)
                     pub_semantic.publish(m)
 
                 if pub_semantic_color.get_num_connections() > 0:
