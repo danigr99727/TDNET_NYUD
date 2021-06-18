@@ -1,4 +1,4 @@
-#!/usr/bin/env /root/anaconda3/envs/TDNet/bin/python
+#!/usr/bin/env /root/monocular_exploration/TDNetEnv/bin/python
 
 import os
 
